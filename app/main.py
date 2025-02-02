@@ -5,7 +5,7 @@ from app.schemas.schemas import CarData, EnhancedDescriptionResponse
 app = FastAPI()
 
 # Initialize GPT4All service
-gpt4all_service = GPT4AllService("Meta-Llama-3-8B-Instruct.Q4_0.gguf", device="cpu")
+gpt4all_service = GPT4AllService("Meta-Llama-3-8B-Instruct.Q4_0.gguf")
 
 @app.on_event("startup")
 async def startup_event():
