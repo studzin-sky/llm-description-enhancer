@@ -23,20 +23,28 @@ The application is designed to be run locally for development or containerized u
 
 ## Project Structure
 
+A typical layout for this project would be:
+
+```text
 .
 ├── app/
+│   ├── __init__.py
 │   ├── main.py                   # FastAPI application, endpoints
 │   ├── models/
+│   │   ├── __init__.py
 │   │   └── huggingface_service.py  # Service for interacting with the LLM
 │   └── schemas/
+│       ├── __init__.py
 │       └── schemas.py              # Pydantic schemas for request/response
+├── .gitignore
 ├── Dockerfile
 ├── download_model.py             # Script to download model during Docker build
-├── requirements.txt
 ├── my_hf_token.txt               # (Example, should be in .gitignore) For storing HF token
+├── requirements.txt
 ├── start_container.sh            # Helper script to run the Docker container
 └── README.md
 
+```
 
 ## Installation (Local Development)
 
