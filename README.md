@@ -188,14 +188,14 @@ The included `Dockerfile` builds an image with the application and the pre-downl
     ```
 -   **Example cURL request (for Git Bash / bash-like shells):**
     ```bash
-    curl -X POST "[http://127.0.0.1:8000/enhance-description](http://127.0.0.1:8000/enhance-description)" \
+    curl -X POST "http://127.0.0.1:8000/enhance-description" \
     -H "Content-Type: application/json" \
     -d '{
-        "make": "Volkswagen",
-        "model": "Golf",
-        "year": 2022,
-        "mileage": 15000,
-        "features": ["Klimatyzacja automatyczna", "System nawigacji", "Czujniki parkowania", "Podgrzewane fotele"],
+        "make": "Toyota",
+        "model": "Corolla",
+        "year": 2021,
+        "mileage": 25000,
+        "features": ["Kamera cofania", "Apple CarPlay", "Android Auto", "System bezkluczykowy"],
         "condition": "Bardzo dobry"
     }'
     ```
