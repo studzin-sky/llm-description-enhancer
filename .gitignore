@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+
+# Model files and large data
+/app/pretrain_model/
+*.bin
+*.safetensors
+*.gguf
+
+# Secrets
+my_hf_token.txt
+/run/secrets/
+
+# Logs and debug files
+*.log
+*.out
+*.err
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+*.env
+*.dockerignore
+docker-compose.override.yml
+
+# Python package files
+*.egg
+*.egg-info/
+dist/
+build/
+*.wheel
+
+# Cache files
+*.cache
+*.mypy_cache/
+*.pytest_cache/
+*.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db

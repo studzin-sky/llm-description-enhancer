@@ -1,35 +1,72 @@
 from fastapi import FastAPI, HTTPException
-from app.models.gpt4all import GPT4AllService
+from app.models.huggingface_service import HuggingFaceTextGenerationService
 from app.schemas.schemas import CarData, EnhancedDescriptionResponse
 
 app = FastAPI()
 
-# Initialize GPT4All service
-gpt4all_service = GPT4AllService("Meta-Llama-3-8B-Instruct.Q4_0.gguf")
+MODEL_PATH_IN_CONTAINER = "/app/pretrain_model"
+hf_service = HuggingFaceTextGenerationService(
+    model_name_or_path=MODEL_PATH_IN_CONTAINER,
+    device="cpu"
+)
+
 
 @app.on_event("startup")
 async def startup_event():
-    await gpt4all_service.initialize()
+    print("Starting up and initializing HuggingFace service...")
+    try:
+        await hf_service.initialize()
+        print(f"HuggingFace service initialized successfully from {MODEL_PATH_IN_CONTAINER}.")
+    except HTTPException as e:
+        print(f"Failed to initialize HuggingFace service: {e.detail}")
+        raise
+    except Exception as e:
+        print(f"An unexpected error occurred during HuggingFace service initialization: {e}")
+        raise
+
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "model_initialized": hf_service.pipeline is not None}
 
 @app.post("/enhance-description", response_model=EnhancedDescriptionResponse)
-def enhance_description(car_data: CarData):
+async def enhance_description(car_data: CarData):
+    chat_messages = [
+        {
+            "role": "system",
+            "content": (
+                "Jesteś pomocnym asystentem AI. Twoim zadaniem jest tworzenie krótkich, "
+                "atrakcyjnych opisów marketingowych samochodów na podstawie dostarczonych danych. "
+                "Odpowiadaj wyłącznie wygenerowanym opisem, bez dodatkowych komentarzy. "
+                "Staraj się, aby opis był zwięzły i kompletny, idealnie mieszcząc się w około 100-120 słowach, " 
+                "i zawsze kończył się pełnym zdaniem." 
+            )
+        },
+        {
+            "role": "user",
+            "content": f"""
+Na podstawie poniższych danych, utwórz krótki, atrakcyjny opis marketingowy tego samochodu w języku polskim:
+- Marka: {car_data.make}
+- Model: {car_data.model}
+- Rok produkcji: {car_data.year}
+- Przebieg: {car_data.mileage} km
+- Wyposażenie: {', '.join(car_data.features)}
+- Stan: {car_data.condition}
+"""
+        }
+    ]
+    
     try:
-        # Create a prompt from car data
-        prompt = f"""
-        Create a short description of this car:
-        - Make: {car_data.make}
-        - Model: {car_data.model}
-        - Year: {car_data.year}
-        - Mileage: {car_data.mileage}
-        - Features: {', '.join(car_data.features)}
-        - Condition: {car_data.condition}
-        """
-        # Generate description
-        description = gpt4all_service.generate_description(prompt)
-        return {"description": description}
+        description = await hf_service.generate_text(
+            prompt_text=None,
+            chat_template_messages=chat_messages,
+            max_new_tokens=150, 
+            temperature=0.75,
+            top_p=0.9,
+        )
+        return {"description": description.strip()}
+    except HTTPException:
+        raise 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Unexpected error in /enhance-description: {e}")
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
