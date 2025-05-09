@@ -1,5 +1,4 @@
 fastapi
-uvicorn
-gpt4all
-pydantic
-python-dotenv
+uvicorn[standard] 
+transformers[torch]
+accelerate 
