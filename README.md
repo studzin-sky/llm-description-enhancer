@@ -39,7 +39,7 @@ A typical layout for this project would be:
 ├── .gitignore
 ├── Dockerfile
 ├── download_model.py             # Script to download model during Docker build
-├── my_hf_token.txt               # (Example, should be in .gitignore) For storing HF token
+├── my_hf_token.txt               # (Should be created locally) For storing HF token
 ├── requirements.txt
 ├── start_container.sh            # Helper script to run the Docker container
 └── README.md
