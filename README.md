@@ -2,7 +2,7 @@
 
 This repository contains a FastAPI application that utilizes a Hugging Face Transformers Large Language Model (specifically, `speakleash/Bielik-1.5B-v3.0-Instruct` or a similar model from the Bielik series) to generate enhanced marketing descriptions for cars, primarily in Polish.
 
-The application is designed to be run locally for development or containerized using Docker for deployment. The LLM is baked into the Docker image for self-contained and efficient execution.
+The application is designed to be run locally for development or containerized using Docker for deployment. The LLM is baked into the Docker image for self-contained and efficient execution, which may require Hugging Face Hub authentication during the build process if the model is gated.
 
 ## Features
 
@@ -15,8 +15,9 @@ The application is designed to be run locally for development or containerized u
 
 - Python 3.9 or higher
 - `pip` (Python package installer)
-- Docker (for containerized deployment)
+- Docker (for containerized deployment, Docker BuildKit enabled recommended for secrets)
 - Git (for cloning the repository)
+- A Hugging Face Hub account and an access token (with `read` permissions) if the chosen model is gated (see Docker Usage section).
 
 ## Project Structure
 
@@ -28,7 +29,9 @@ The application is designed to be run locally for development or containerized u
 │   └── schemas/
 │       └── schemas.py              # Pydantic schemas for request/response
 ├── Dockerfile
+├── download_model.py             # Script to download model during Docker build
 ├── requirements.txt
+├── my_hf_token.txt               # (Example, should be in .gitignore) For storing HF token
 └── README.md
 
 
@@ -63,12 +66,12 @@ The application is designed to be run locally for development or containerized u
     ```bash
     pip install -r requirements.txt
     ```
-    *Note: The first time you run the application locally (or if the model cache is empty), the Hugging Face model (~3.2GB) will be downloaded. This might take some time.*
+    *Note: The first time you run the application locally (or if the model cache is empty), the Hugging Face model (~3.2GB) will be downloaded. This might take some time. **If the model (`speakleash/Bielik-1.5B-v3.0-Instruct` or the one configured) is gated or requires authentication, you may need to log in using `huggingface-cli login` in your terminal before running the application locally.** After logging in, your token will be cached by the `huggingface_hub` library.*
 
 ## Usage (Local Development)
 
 1.  **Start the FastAPI server:**
-    From the project root directory (where `Dockerfile` and the `app` folder are):
+    From the project root directory:
     ```bash
     uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     ```
@@ -82,23 +85,39 @@ The application is designed to be run locally for development or containerized u
 
 ## Docker Usage
 
-The included `Dockerfile` builds an image with the application and the pre-downloaded Hugging Face model, making it self-contained.
+The included `Dockerfile` builds an image with the application and the pre-downloaded Hugging Face model, making it self-contained. Downloading gated models during the build process requires a Hugging Face Hub token.
 
-1.  **Build the Docker image:**
-    From the project root directory:
+1.  **Prepare Hugging Face Hub Token (for Gated Models):**
+    The `speakleash/Bielik-1.5B-v3.0-Instruct` model may require authentication to download.
+    * **Get a Token:**
+        1.  Go to your Hugging Face account settings: [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+        2.  Create a new token (e.g., named "docker-bielik-access") with `read` permissions.
+        3.  Copy the generated token (it will start with `hf_`).
+    * **Create Token File:**
+        1.  In your project's root directory (next to your `Dockerfile`), create a file named `my_hf_token.txt`.
+        2.  Paste **only the token string** (e.g., `hf_YourActualTokenValueHere`) into this file. Do not add any other text or variable names.
+        3.  **Important:** Add `my_hf_token.txt` to your `.gitignore` file to prevent accidentally committing your token to version control:
+            ```
+            echo "my_hf_token.txt" >> .gitignore
+            ```
+
+2.  **Build the Docker image:**
+    From the project root directory, run:
     ```bash
-    docker build -t llm-description-enhancer .
+    DOCKER_BUILDKIT=1 docker build --secret id=huggingface_token,src=my_hf_token.txt -t llm-description-enhancer .
     ```
-    *(This step will take a while, especially the first time, as it downloads the LLM).*
+    * `DOCKER_BUILDKIT=1`: Enables BuildKit, which is required for using `--secret`.
+    * `--secret id=huggingface_token,src=my_hf_token.txt`: Securely provides the content of `my_hf_token.txt` to the build process. The `id=huggingface_token` must match the ID used in the `RUN --mount` directive in your `Dockerfile`.
+    * *(This step will take a while, especially the first time, as it downloads the LLM using your token).*
 
-2.  **Run the Docker container:**
+3.  **Run the Docker container:**
     ```bash
     docker run --rm -p 8000:8000 llm-description-enhancer
     ```
     * `--rm`: Automatically removes the container when it stops.
     * `-p 8000:8000`: Maps port 8000 on your host to port 8000 in the container.
 
-3.  **Test the containerized application:**
+4.  **Test the containerized application:**
     Once the container is running, you can send requests to `http://127.0.0.1:8000` as you would for the local setup (e.g., using cURL or an API client).
 
 ## API Endpoints
@@ -113,7 +132,7 @@ The included `Dockerfile` builds an image with the application and the pre-downl
     {
       "status": "ok",
       "model_initialized": true,
-      "model_path": "/app/pretrain_model"
+      "model_path": "/app/pretrain_model" 
     }
     ```
 
@@ -139,7 +158,7 @@ The included `Dockerfile` builds an image with the application and the pre-downl
       "description": "Wygenerowany przez AI opis samochodu..."
     }
     ```
--   **Example cURL request:**
+-   **Example cURL request (for Git Bash / bash-like shells):**
     ```bash
     curl -X POST "[http://127.0.0.1:8000/enhance-description](http://127.0.0.1:8000/enhance-description)" \
     -H "Content-Type: application/json" \
@@ -163,7 +182,7 @@ The `HuggingFaceTextGenerationService` class handles the interaction with the La
 
 ## Configuration
 
--   **Model Used:** `speakleash/Bielik-1.5B-v3.0-Instruct` (or as configured in `app/main.py` for local runs, and baked into `/app/pretrain_model` in the Docker image).
+-   **Model Used:** `speakleash/Bielik-1.5B-v3.0-Instruct`. This is baked into `/app/pretrain_model` in the Docker image. For local development, it's downloaded to the Hugging Face cache.
 -   **Language:** The primary focus is on generating descriptions in **Polish**.
 -   **Prompt Engineering:** The system and user prompts in `app/main.py` are crafted to guide the model towards generating concise and relevant marketing descriptions.
 
