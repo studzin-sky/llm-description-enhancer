@@ -10,6 +10,7 @@ The application is designed to be run locally for development or containerized u
 - Utilizes the `speakleash/Bielik-1.5B-v3.0-Instruct` model via the Hugging Face `transformers` library.
 - Health check endpoint.
 - Docker support for easy deployment, with the model included in the image.
+- Includes a `start_container.sh` script for convenient container startup.
 
 ## Prerequisites
 
@@ -18,6 +19,7 @@ The application is designed to be run locally for development or containerized u
 - Docker (for containerized deployment, Docker BuildKit enabled recommended for secrets)
 - Git (for cloning the repository)
 - A Hugging Face Hub account and an access token (with `read` permissions) if the chosen model is gated (see Docker Usage section).
+- For using `start_container.sh`: A bash-compatible shell (like those on Linux, macOS, or Git Bash on Windows).
 
 ## Project Structure
 
@@ -32,6 +34,7 @@ The application is designed to be run locally for development or containerized u
 ├── download_model.py             # Script to download model during Docker build
 ├── requirements.txt
 ├── my_hf_token.txt               # (Example, should be in .gitignore) For storing HF token
+├── start_container.sh            # Helper script to run the Docker container
 └── README.md
 
 
@@ -97,7 +100,7 @@ The included `Dockerfile` builds an image with the application and the pre-downl
         1.  In your project's root directory (next to your `Dockerfile`), create a file named `my_hf_token.txt`.
         2.  Paste **only the token string** (e.g., `hf_YourActualTokenValueHere`) into this file. Do not add any other text or variable names.
         3.  **Important:** Add `my_hf_token.txt` to your `.gitignore` file to prevent accidentally committing your token to version control:
-            ```
+            ```bash
             echo "my_hf_token.txt" >> .gitignore
             ```
 
@@ -110,15 +113,32 @@ The included `Dockerfile` builds an image with the application and the pre-downl
     * `--secret id=huggingface_token,src=my_hf_token.txt`: Securely provides the content of `my_hf_token.txt` to the build process. The `id=huggingface_token` must match the ID used in the `RUN --mount` directive in your `Dockerfile`.
     * *(This step will take a while, especially the first time, as it downloads the LLM using your token).*
 
-3.  **Run the Docker container:**
-    ```bash
-    docker run --rm -p 8000:8000 llm-description-enhancer
-    ```
-    * `--rm`: Automatically removes the container when it stops.
-    * `-p 8000:8000`: Maps port 8000 on your host to port 8000 in the container.
+3.  **Run the Docker container using the Helper Script (`start_container.sh`):**
+    A helper script `start_container.sh` is included in the repository to simplify starting the Docker container. This script typically handles stopping/removing any pre-existing container with the same configured name and then starts a new one.
+
+    * **Ensure the script is executable:**
+        After cloning the repository, or if the execute permission isn't set, you might need to make the script executable (on Linux, macOS, or Git Bash on Windows):
+        ```bash
+        chmod +x start_container.sh
+        ```
+
+    * **Run the script:**
+        From the project root directory:
+        ```bash
+        ./start_container.sh
+        ```
+
+    * **Expected Outcome (depends on your script's content):**
+        The script will likely:
+        * Output messages indicating it's managing the container.
+        * Start the container (possibly in detached mode).
+        * Inform you that the service is available at `http://127.0.0.1:8000`.
+        * Provide commands to view logs or stop the container if it's running in detached mode (e.g., `docker logs <container_name> -f` and `docker stop <container_name>`).
+
+    *(Alternatively, you can run the container manually: `docker run --rm -p 8000:8000 llm-description-enhancer`)*
 
 4.  **Test the containerized application:**
-    Once the container is running, you can send requests to `http://127.0.0.1:8000` as you would for the local setup (e.g., using cURL or an API client).
+    Once the container is running (via the script or manually), send requests to `http://127.0.0.1:8000` as described in the API Endpoints section.
 
 ## API Endpoints
 
