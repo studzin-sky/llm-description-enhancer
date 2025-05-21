@@ -2,6 +2,11 @@
 
 IMAGE_NAME="bielik-fastapi-service"
 CONTAINER_NAME="bielik_app_instance"
+TOKEN_FILE="my_hf_token.txt"
+
+# Build the Docker image with Hugging Face token as a secret
+echo "Building Docker image..."
+DOCKER_BUILDKIT=1 docker build --secret id=huggingface_token,src=$TOKEN_FILE -t $IMAGE_NAME .
 
 echo "Attempting to stop and remove existing container named $CONTAINER_NAME (if any)..."
 docker stop $CONTAINER_NAME > /dev/null 2>&1 || true # Stop if running, ignore error if not

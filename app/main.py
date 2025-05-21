@@ -1,8 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from app.models.huggingface_service import HuggingFaceTextGenerationService
+from fastapi.middleware.cors import CORSMiddleware
 from app.schemas.schemas import CarData, EnhancedDescriptionResponse
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 MODEL_PATH_IN_CONTAINER = "/app/pretrain_model"
 hf_service = HuggingFaceTextGenerationService(

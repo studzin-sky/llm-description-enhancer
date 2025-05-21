@@ -1,3 +1,25 @@
+## Contents
+
+1. [Features](#features)
+2. [Prerequisites](#prerequisites)
+3. [Project Structure](#project-structure)
+4. [Installation (Local Development)](#installation-local-development)
+5. [Usage (Local Development)](#usage-local-development)
+6. [Docker Usage](#docker-usage)
+7. [Quick Start with PowerShell (`start_container.ps1`)](#quick-start-with-powershell-start_containerps1)
+8. [API Endpoints](#api-endpoints)
+    - [Health Check](#health-check)
+    - [Enhance Description](#enhance-description)
+9. [Core Service (`app/models/huggingface_service.py`)](#core-service-appmodelshuggingface_servicepy)
+10. [Configuration](#configuration)
+11. [Schemas (`app/schemas/schemas.py`)](#schemas-appschemasschemaspy)
+    - [CarData](#cardata)
+    - [EnhancedDescriptionResponse](#enhanceddescriptionresponse)
+12. [Contributing](#contributing)
+13. [License](#license)
+
+---
+
 # LLM Car Description Enhancer (Polish)
 
 This repository contains a FastAPI application that utilizes a Hugging Face Transformers Large Language Model (specifically, `speakleash/Bielik-1.5B-v3.0-Instruct` or a similar model from the Bielik series) to generate enhanced marketing descriptions for cars, primarily in Polish.
@@ -96,10 +118,6 @@ The included `Dockerfile` builds an image with the application and the pre-downl
     * **Create Token File:**
         1.  In your project's root directory (next to your `Dockerfile`), create a file named `my_hf_token.txt`.
         2.  Paste **only the token string** (e.g., `hf_YourActualTokenValueHere`) into this file. Do not add any other text or variable names.
-        3.  **Important:** Add `my_hf_token.txt` to your `.gitignore` file to prevent accidentally committing your token to version control:
-            ```
-            echo "my_hf_token.txt" >> .gitignore
-            ```
 
 2.  **Build the Docker image:**
     From the project root directory, run:
@@ -119,6 +137,41 @@ The included `Dockerfile` builds an image with the application and the pre-downl
 
 4.  **Test the containerized application:**
     Once the container is running, you can send requests to `http://127.0.0.1:8000` as you would for the local setup (e.g., using cURL or an API client).
+
+## Quick Start with PowerShell (`start_container.ps1`)
+
+For Windows users, you can automate the Docker build and run process using the provided PowerShell script. This script will:
+- Build the Docker image using your Hugging Face token (from `my_hf_token.txt`)
+- Stop and remove any existing container named `bielik_app_instance`
+- Start a new container and map port 8000
+
+**Steps:**
+
+1. Ensure your Hugging Face token is saved in `my_hf_token.txt` in the project root (see above for details).
+2. Open PowerShell in the project directory.
+3. (Optional, but recommended) Temporarily allow running unsigned scripts for this session:
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+   ```
+4. Run the script:
+   ```powershell
+   .\start_container.ps1
+   ```
+
+The script will build the image and start the container. Your FastAPI service will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+You can view logs with:
+```powershell
+docker logs bielik_app_instance -f
+```
+To stop the container:
+```powershell
+docker stop bielik_app_instance
+```
+
+If you encounter a security error about script signing, see the [Microsoft documentation on execution policies](https://go.microsoft.com/fwlink/?LinkID=135170).
+
+---
 
 ## API Endpoints
 
